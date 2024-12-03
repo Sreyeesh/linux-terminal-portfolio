@@ -2,87 +2,86 @@ const output = document.getElementById("output");
 const commandInput = document.getElementById("command-input");
 const terminal = document.getElementById("terminal");
 
+// Commands object
 const commands = {
   help: `
 Available commands:
   help      - List available commands
-  about     - Display information about me
-  projects  - Show my GitHub projects
-  contact   - Display contact information
-  skills    - List my technical skills
-  socials   - Display my social media links
-  theme     - Toggle light/dark terminal theme
+  about     - Display information about this terminal
   clear     - Clear the terminal
+  date      - Show the current date and time
+  theme     - Toggle terminal themes (light and dark)
   `,
-  about: "Hi! I'm [Your Name], a [Your Role]. I specialize in building awesome web applications.",
-  projects: "Check out my GitHub: <a href='https://github.com/yourusername' target='_blank'>GitHub Profile</a>",
-  contact: "Email me at: <a href='mailto:your.email@example.com'>your.email@example.com</a>",
-  skills: `
-My technical skills:
-  - JavaScript, HTML, CSS
-  - React, Node.js, Express
-  - Python, Django
-  - Git, Docker, Linux
+
+  about: `
+Welcome to the Minimal Terminal Portfolio!
+This site is designed to simulate a Linux terminal environment.
   `,
-  socials: `
-Find me online:
-  - LinkedIn: <a href='https://linkedin.com/in/yourusername' target='_blank'>LinkedIn</a>
-  - GitHub: <a href='https://github.com/yourusername' target='_blank'>GitHub</a>
-  - Twitter: <a href='https://twitter.com/yourusername' target='_blank'>Twitter</a>
-  `,
-  theme: "Toggled terminal theme!",
-  clear: "",
 };
 
-// Add a welcome message on load
+// Track the current theme (default to dark mode)
+let isDarkTheme = true;
+
+// Display a welcome message
 function displayWelcomeMessage() {
   const welcomeMessage = `
-Welcome to my Linux terminal-themed portfolio!
-Type 'help' to get started.
-`;
-  output.innerHTML += `${welcomeMessage}\n`;
+Welcome to the Minimal Terminal!
+Type 'help' to see the list of available commands.
+  `;
+  output.innerHTML += `<div>${welcomeMessage}</div><br>`;
 }
 
-// Command handling logic
-commandInput.addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    const input = commandInput.value.trim();
-    handleCommand(input);
-    commandInput.value = ""; // Clear the input field
-  }
-});
+// Auto-focus the input field
+function autoFocusInput() {
+  commandInput.focus();
+}
 
+// Handle user commands
 function handleCommand(input) {
-  const prompt = `guest@portfolio:~$ ${input}`;
-  const response = commands[input] || `<span class="error">Command not found: ${input}. Type 'help' for a list of commands.</span>`;
+  const prompt = `guest@terminal:~$ ${input}`;
+  let response;
 
-  // Append the command and response to the output
-  output.innerHTML += `${prompt}\n${response}\n\n`;
-
-  // Handle special commands
   if (input === "clear") {
     output.innerHTML = ""; // Clear the terminal
+    return;
+  } else if (input === "date") {
+    response = new Date().toString();
   } else if (input === "theme") {
     toggleTheme();
+    response = `Theme switched to ${isDarkTheme ? "dark" : "light"} mode.`;
+  } else if (commands[input]) {
+    response = commands[input];
+  } else {
+    response = `Command not found: ${input}. Type 'help' for a list of commands.`;
   }
 
-  // Auto-scroll to the bottom
+  // Display command and response
+  output.innerHTML += `<div>${prompt}</div><div>${response}</div><br>`;
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-function toggleTheme() {
-  const isDark = document.body.classList.contains("dark-theme");
-
-  if (isDark) {
-    // Switch to light theme
-    document.body.classList.remove("dark-theme");
-    document.body.classList.add("light-theme");
-  } else {
-    // Switch to dark theme
-    document.body.classList.remove("light-theme");
-    document.body.classList.add("dark-theme");
+// Listen for Enter key
+commandInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const input = commandInput.value.trim();
+    if (input) handleCommand(input);
+    commandInput.value = ""; // Clear the input
   }
+});
+
+// Toggle theme
+function toggleTheme() {
+  isDarkTheme = !isDarkTheme;
+  document.body.classList.toggle("dark-theme", isDarkTheme);
+  document.body.classList.toggle("light-theme", !isDarkTheme);
+
+  commandInput.classList.toggle("dark-theme", isDarkTheme);
+  commandInput.classList.toggle("light-theme", !isDarkTheme);
 }
 
-// Initialize the terminal with a welcome message
-displayWelcomeMessage();
+// Initialize the terminal
+document.addEventListener("DOMContentLoaded", () => {
+  displayWelcomeMessage();
+  autoFocusInput();
+  commandInput.addEventListener("click", autoFocusInput); // Ensure the cursor remains aligned
+});
