@@ -1,87 +1,130 @@
-const output = document.getElementById("output");
-const commandInput = document.getElementById("command-input");
+// Get terminal container
 const terminal = document.getElementById("terminal");
 
-// Commands object
-const commands = {
-  help: `
-Available commands:
-  help      - List available commands
-  about     - Display information about this terminal
-  clear     - Clear the terminal
-  date      - Show the current date and time
-  theme     - Toggle terminal themes (light and dark)
-  `,
-
-  about: `
-Welcome to the Minimal Terminal Portfolio!
-This site is designed to simulate a Linux terminal environment.
-  `,
+// Mock filesystem
+const fileSystem = {
+    "/": {
+        "resume.txt": "This is Sreyeesh Garimella's resume. Use the 'download' command to download the PDF.",
+        "projects.txt": "1. Terminal Portfolio\n2. Web Scraper\n3. API Server",
+        "about.txt": "Sreyeesh Garimella is a software engineer passionate about building efficient systems.",
+    },
 };
+let currentPath = "/";
 
-// Track the current theme (default to dark mode)
-let isDarkTheme = true;
-
-// Display a welcome message
-function displayWelcomeMessage() {
-  const welcomeMessage = `
-Welcome to the Minimal Terminal!
-Type 'help' to see the list of available commands.
-  `;
-  output.innerHTML += `<div>${welcomeMessage}</div><br>`;
+// Commands
+function pwd() {
+    return currentPath;
 }
 
-// Auto-focus the input field
-function autoFocusInput() {
-  commandInput.focus();
+function ls() {
+    const contents = fileSystem[currentPath];
+    if (contents) {
+        return Object.keys(contents).join("  ");
+    }
+    return `ls: cannot access '${currentPath}': No such file or directory`;
 }
 
-// Handle user commands
-function handleCommand(input) {
-  const prompt = `guest@terminal:~$ ${input}`;
-  let response;
-
-  if (input === "clear") {
-    output.innerHTML = ""; // Clear the terminal
-    return;
-  } else if (input === "date") {
-    response = new Date().toString();
-  } else if (input === "theme") {
-    toggleTheme();
-    response = `Theme switched to ${isDarkTheme ? "dark" : "light"} mode.`;
-  } else if (commands[input]) {
-    response = commands[input];
-  } else {
-    response = `Command not found: ${input}. Type 'help' for a list of commands.`;
-  }
-
-  // Display command and response
-  output.innerHTML += `<div>${prompt}</div><div>${response}</div><br>`;
-  terminal.scrollTop = terminal.scrollHeight;
+function cd(args) {
+    if (!args[0]) return "cd: missing operand";
+    const targetPath = args[0] === ".."
+        ? currentPath.split("/").slice(0, -1).join("/") || "/"
+        : `${currentPath}/${args[0]}`;
+    if (fileSystem[targetPath]) {
+        currentPath = targetPath;
+        return "";
+    }
+    return `cd: ${args[0]}: No such file or directory`;
 }
 
-// Listen for Enter key
-commandInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const input = commandInput.value.trim();
-    if (input) handleCommand(input);
-    commandInput.value = ""; // Clear the input
-  }
-});
-
-// Toggle theme
-function toggleTheme() {
-  isDarkTheme = !isDarkTheme;
-  document.body.classList.toggle("dark-theme", isDarkTheme);
-  document.body.classList.toggle("light-theme", !isDarkTheme);
-
-  commandInput.classList.toggle("dark-theme", isDarkTheme);
-  commandInput.classList.toggle("light-theme", !isDarkTheme);
+function cat(args) {
+    if (!args[0]) return "cat: missing operand";
+    const file = fileSystem[currentPath]?.[args[0]];
+    if (file) {
+        return file;
+    }
+    return `cat: ${args[0]}: No such file`;
 }
 
-// Initialize the terminal
-document.addEventListener("DOMContentLoaded", () => {
-  displayWelcomeMessage();
-  autoFocusInput();
-  commandInput.addEventListener("click", autoFocusInput); // Ensure the cursor remains aligned
-});
+function download() {
+    const link = document.createElement("a");
+    link.href = "https://example.com/sreyeesh_resume.pdf"; // Replace with your resume URL
+    link.download = "Sreyeesh_Garimella_Resume.pdf";
+    link.click();
+    return "Downloading resume...";
+}
+
+function clear() {
+    terminal.innerHTML = "";
+    return "";
+}
+
+// Command handler
+function handleCommand(command) {
+    const [cmd, ...args] = command.split(" ");
+    switch (cmd) {
+        case "pwd":
+            return pwd();
+        case "ls":
+            return ls();
+        case "cd":
+            return cd(args);
+        case "cat":
+            return cat(args);
+        case "download":
+            return download();
+        case "help":
+            return "Available commands: help, ls, cd, pwd, cat, download, clear, exit";
+        case "clear":
+            return clear();
+        case "exit":
+            window.close();
+            return "Exiting...";
+        default:
+            return `${cmd}: command not found`;
+    }
+}
+
+// Add a new line to the terminal
+function appendLine(content) {
+    const line = document.createElement("div");
+    line.className = "output-line";
+    line.textContent = content;
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Create a new command prompt
+function createPrompt() {
+    const commandLine = document.createElement("div");
+    commandLine.className = "command-line";
+
+    const prompt = document.createElement("span");
+    prompt.className = "prompt";
+    prompt.textContent = `guest@sreyeesh-portfolio:${currentPath}$`;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "input";
+    input.autocomplete = "off";
+
+    commandLine.appendChild(prompt);
+    commandLine.appendChild(input);
+    terminal.appendChild(commandLine);
+
+    input.focus();
+
+    input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            const command = input.value.trim();
+            terminal.removeChild(commandLine);
+            appendLine(`${prompt.textContent} ${command}`);
+            const result = handleCommand(command);
+            if (result) appendLine(result);
+            createPrompt();
+        }
+    });
+}
+
+// Welcome message
+appendLine("Welcome to Sreyeesh Garimella's portfolio! Type 'help' for available commands.");
+createPrompt();
